@@ -2786,7 +2786,7 @@ M.pull_request_assignees_query = [[
 -- https://docs.github.com/en/graphql/reference/mutations#addassigneestoassignable
 M.add_assignees_mutation = [[
   mutation {
-    addAssigneesToAssignable(input: {assignableId: "%s", assigneeIds: ["%s"]}) {
+    addAssigneesToAssignable(input: {assignableId: "%s", assigneeIds: %s}) {
       assignable {
         ... on Issue {
           id
@@ -2819,7 +2819,7 @@ M.remove_assignees_mutation = [[
 -- for teams use `teamIds`
 M.request_reviews_mutation = [[
   mutation {
-    requestReviews(input: {pullRequestId: "%s", union: true, userIds: ["%s"]}) {
+    requestReviews(input: {pullRequestId: "%s", union: true, userIds: %s}) {
       pullRequest {
         id
         reviewRequests(first: 100) {

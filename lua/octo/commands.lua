@@ -1609,16 +1609,22 @@ function M.add_user(subject, login)
     utils.error "Cannot get issue/pr id"
   end
 
-  local cb = function(user_id)
+  local cb = function(users)
+    local user_ids = {}
+    for _, user in ipairs(users) do
+      table.insert(user_ids, user.id)
+    end
+
     local query
     if subject == "assignee" then
-      query = graphql("add_assignees_mutation", iid, user_id)
+      query = graphql("add_assignees_mutation", iid, create_list(user_ids, format))
     elseif subject == "reviewer" then
-      query = graphql("request_reviews_mutation", iid, user_id)
+      query = graphql("request_reviews_mutation", iid, create_list(user_ids, format))
     else
       utils.error "Invalid user type"
       return
     end
+
     gh.run {
       args = { "api", "graphql", "--paginate", "-f", string.format("query=%s", query) },
       cb = function(output, stderr)
@@ -1634,10 +1640,11 @@ function M.add_user(subject, login)
       end,
     }
   end
+
   if login then
     local user_id = utils.get_user_id(login)
     if user_id then
-      cb(user_id)
+      cb { { id = user_id } }
     else
       utils.error "User not found"
     end

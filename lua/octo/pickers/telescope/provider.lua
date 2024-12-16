@@ -23,6 +23,35 @@ function M.not_implemented()
   utils.error "Not implemented yet"
 end
 
+local function select(opts)
+  local prompt_bufnr = opts.bufnr
+  local single_cb = opts.single_cb
+  local multiple_cb = opts.multiple_cb
+  local get_item = opts.get_item
+
+  local picker = action_state.get_current_picker(prompt_bufnr)
+  local selections = picker:get_multi_selection()
+  local cb
+  local items = {}
+  if #selections == 0 then
+    local selection = action_state.get_selected_entry(prompt_bufnr)
+    table.insert(items, get_item(selection))
+    cb = single_cb
+  else
+    for _, selection in ipairs(selections) do
+      table.insert(items, get_item(selection))
+    end
+    cb = multiple_cb
+  end
+  actions.close(prompt_bufnr)
+
+  if #items == 0 then
+    return
+  end
+
+  cb(items)
+end
+
 local dropdown_opts = require("telescope.themes").get_dropdown {
   layout_config = {
     width = 0.4,
@@ -742,30 +771,6 @@ end
 -- LABELS
 --
 
-local function select(opts)
-  local prompt_bufnr = opts.bufnr
-  local single_cb = opts.single_cb
-  local multiple_cb = opts.multiple_cb
-  local get_item = opts.get_item
-
-  local picker = action_state.get_current_picker(prompt_bufnr)
-  local selections = picker:get_multi_selection()
-  local cb
-  local items = {}
-  if #selections == 0 then
-    local selection = action_state.get_selected_entry(prompt_bufnr)
-    table.insert(items, get_item(selection))
-    cb = single_cb
-  else
-    for _, selection in ipairs(selections) do
-      table.insert(items, get_item(selection))
-    end
-    cb = multiple_cb
-  end
-  actions.close(prompt_bufnr)
-  cb(items)
-end
-
 function M.select_label(cb)
   local opts = vim.deepcopy(dropdown_opts)
   local bufnr = vim.api.nvim_get_current_buf()
@@ -992,40 +997,46 @@ function M.select_user(cb)
 
   local finder = create_user_finder()
 
+  local get_item = function(selection)
+    if not selection.teams then
+      return selection.user
+    end
+
+    pickers
+      .new(opts, {
+        prompt_title = false,
+        results_title = false,
+        preview_title = false,
+        finder = finders.new_table {
+          results = selection.teams,
+          entry_maker = entry_maker.gen_from_team(),
+        },
+        sorter = conf.generic_sorter(opts),
+        attach_mappings = function()
+          actions.select_default:replace(function(prompt_bufnr)
+            local selected_team = action_state.get_selected_entry(prompt_bufnr)
+            actions.close(prompt_bufnr)
+            cb { { id = selected_team.team.id } }
+          end)
+          return true
+        end,
+      })
+      :find()
+    return nil
+  end
+
   pickers
     .new(opts, {
       finder = finder,
       sorter = sorters.get_fuzzy_file(opts),
       attach_mappings = function()
         actions.select_default:replace(function(prompt_bufnr)
-          local selected_user = action_state.get_selected_entry(prompt_bufnr)
-          actions._close(prompt_bufnr, true)
-          if not selected_user.teams then
-            -- user
-            cb(selected_user.value)
-          else
-            -- organization, pick a team
-            pickers
-              .new(opts, {
-                prompt_title = false,
-                results_title = false,
-                preview_title = false,
-                finder = finders.new_table {
-                  results = selected_user.teams,
-                  entry_maker = entry_maker.gen_from_team(),
-                },
-                sorter = conf.generic_sorter(opts),
-                attach_mappings = function()
-                  actions.select_default:replace(function(prompt_bufnr)
-                    local selected_team = action_state.get_selected_entry(prompt_bufnr)
-                    actions.close(prompt_bufnr)
-                    cb(selected_team.team.id)
-                  end)
-                  return true
-                end,
-              })
-              :find()
-          end
+          select {
+            bufnr = prompt_bufnr,
+            single_cb = cb,
+            multiple_cb = cb,
+            get_item = get_item,
+          }
         end)
         return true
       end,
@@ -1068,9 +1079,14 @@ function M.select_assignee(cb)
             sorter = conf.generic_sorter(opts),
             attach_mappings = function(_, _)
               actions.select_default:replace(function(prompt_bufnr)
-                local selected_assignee = action_state.get_selected_entry(prompt_bufnr)
-                actions.close(prompt_bufnr)
-                cb(selected_assignee.user.id)
+                select {
+                  bufnr = prompt_bufnr,
+                  single_cb = cb,
+                  multiple_cb = cb,
+                  get_item = function(selection)
+                    return selection.user
+                  end,
+                }
               end)
               return true
             end,
