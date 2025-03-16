@@ -32,12 +32,11 @@ Edit and review GitHub issues, pull requests, and discussions from the comfort o
 - [:octopus: Octo.nvim](#octopus-octonvim)
   - [🌲 Table of Contents](#-table-of-contents)
   - [💫 Features](#-features)
+  - [🔥 Examples](#-examples)
   - [🎯 Requirements](#-requirements)
   - [📦 Installation](#-installation)
   - [🔧 Configuration](#-configuration)
-  - [🚀 Usage](#-usage)
   - [🤖 Commands](#-commands)
-  - [🔥 Examples](#-examples)
   - [📋 PR reviews](#-pr-reviews)
   - [🍞 Completion](#-completion)
   - [🎨 Colors](#-colors)
@@ -51,10 +50,26 @@ Edit and review GitHub issues, pull requests, and discussions from the comfort o
 
 ## 💫 Features
 
-- Edit GitHub issues and PRs
+- Edit GitHub issues, PRs, and discussions like a regular buffer. Sync changes with GitHub using `:w(rite)`
 - Add/Modify/Delete comments
 - Add/Remove label, reactions, assignees, project cards, reviewers, etc.
 - Add Review PRs
+
+## 🔥 Examples
+
+```vim
+Octo https://github.com/pwntester/octo.nvim/issues/12
+Octo issue create
+Octo issue create pwntester/octo.nvim
+Octo comment add
+Octo reaction add hooray
+Octo issue edit pwntester/octo.nvim 1
+Octo issue edit 1
+Octo issue list createdBy=pwntester
+Octo issue list neovim/neovim labels=bug,help\ wanted states=OPEN
+Octo search assignee:pwntester is:pr
+Octo search is:discussion repo:pwntester/octo.nvim category:"Show and Tell"
+```
 
 ## 🎯 Requirements
 
@@ -77,6 +92,7 @@ Edit and review GitHub issues, pull requests, and discussions from the comfort o
 Use your favourite plugin manager to install it, e.g.:
 
 ```lua
+--- Packer
 use {
   'pwntester/octo.nvim',
   requires = {
@@ -90,12 +106,24 @@ use {
     require"octo".setup()
   end
 }
+--- lazy.nvim
+return {
+  'pwntester/octo.nvim',
+  dependencies = {
+    'nvim-lua/plenary.nvim',
+    'nvim-telescope/telescope.nvim',
+    -- OR 'ibhagwan/fzf-lua',
+    -- OR 'folke/snacks.nvim',
+    'nvim-tree/nvim-web-devicons',
+  },
+  opts = {},
+}
 ```
 
 ## 🔧 Configuration
 
 ```lua
-require"octo".setup({
+require"octo".setup {
   use_local_fs = false,                    -- use local files on right side of reviews
   enable_builtin = false,                  -- shows a list of builtin actions when no action is provided
   default_remote = {"upstream", "origin"}, -- order to try remotes
@@ -322,12 +350,9 @@ require"octo".setup({
       read = { lhs = "<localleader>rn", desc = "mark notification as read" },
     },
   },
-})
+}
 ```
 
-## 🚀 Usage
-
-Just edit the issue title, body or comments as a regular buffer and use `:w(rite)` to sync the issue with GitHub.
 
 ## 🤖 Commands
 
@@ -478,21 +503,6 @@ If no command is passed, the argument to `Octo` is treated as a URL from where a
   `mentionable` are specific to the current repo. The `assignable` option is more
   restrictive than `mentionable`.
 
-## 🔥 Examples
-
-```vim
-Octo https://github.com/pwntester/octo.nvim/issues/12
-Octo issue create
-Octo issue create pwntester/octo.nvim
-Octo comment add
-Octo reaction add hooray
-Octo issue edit pwntester/octo.nvim 1
-Octo issue edit 1
-Octo issue list createdBy=pwntester
-Octo issue list neovim/neovim labels=bug,help\ wanted states=OPEN
-Octo search assignee:pwntester is:pr
-Octo search is:discussion repo:pwntester/octo.nvim category:"Show and Tell"
-```
 
 ## 📋 PR reviews
 
